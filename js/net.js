@@ -28,9 +28,8 @@
     return !!(conn && conn.open) || !!(manual && manual.dc && manual.dc.readyState === 'open');
   }
   function genId() {
-    var s = '';
-    for (var i = 0; i < 6; i++) s += CHARS[(Math.random() * CHARS.length) | 0];
-    return 'lzw-' + s;
+    // 6 位纯数字房间号（像 PIN 码，方便口头/微信传输）
+    return String(100000 + ((Math.random() * 900000) | 0));
   }
   function wireData(feed) {
     feed.on('data', function (d) { emit('data', parse(d)); });
@@ -40,17 +39,26 @@
   }
   /* ---------- 模式A：PeerJS 云端 ---------- */
   function createRoom(cb) {
-    var settled = false;
-    peer = new Peer(genId());
-    peer.on('open', function (id) {
-      if (settled) return; settled = true;
-      cb(null, id);
-    });
-    peer.on('connection', function (c) { wireData(c); conn = c; });
-    peer.on('error', function (e) {
-      if (!settled) { settled = true; cb(e); }
-      else emit('error', e);
-    });
+    var settled = false, tries = 0;
+    function attempt() {
+      if (settled) return;
+      peer = new Peer(genId());
+      peer.on('open', function (id) {
+        if (settled) return; settled = true;
+        cb(null, id);
+      });
+      peer.on('connection', function (c) { wireData(c); conn = c; });
+      peer.on('error', function (e) {
+        if (e && e.type === 'unavailable-id' && tries < 3) {
+          tries++;
+          try { peer.destroy(); } catch (x) {}
+          return attempt(); // 数字房间号撞号时自动换一个
+        }
+        if (!settled) { settled = true; cb(e); }
+        else emit('error', e);
+      });
+    }
+    attempt();
   }
   function joinRoom(roomId, cb) {
     var settled = false;

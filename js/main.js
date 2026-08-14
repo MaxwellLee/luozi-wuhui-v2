@@ -137,8 +137,9 @@
     m.box.querySelector('#share-copy-link').addEventListener('click', function () { copyText(url); });
     m.box.querySelector('#share-copy-msg').addEventListener('click', function () { copyText(msg); });
   }
+  var friendState = null;
   function showFriend() {
-    var fstate = { connected: false };
+    friendState = { connected: false };
     var m = g.App.modal({
       title: '好友对弈',
       body:
@@ -146,9 +147,9 @@
         '<button class="friend-tab active" data-ftab="cloud">快速联机（房间号）</button>' +
         '<button class="friend-tab" data-ftab="manual">手动信令</button></div>' +
         '<div id="ftab-cloud">' +
-        '<p class="muted small">你和好友各自打开本页面，一方「创建房间」，另一方输入房间号「加入房间」。免费点对点，不经过游戏服务器。</p>' +
+        '<p class="muted small">你和好友各自打开本页面：一方「创建房间」得到 <strong>6 位数字</strong>房间号，另一方输入<strong>相同的 6 位数字</strong>「加入房间」即可匹配。免费点对点，不经过游戏服务器。</p>' +
         '<div class="option-row"><button class="btn primary" id="f-create">创建房间</button>' +
-        '<input type="text" id="f-roomid" maxlength="10" placeholder="房间号" style="width:130px">' +
+        '<input type="text" id="f-roomid" maxlength="8" placeholder="6位数字" style="width:130px">' +
         '<button class="btn" id="f-join">加入房间</button></div>' +
         '<div id="f-room-info" class="hidden">' +
         '<div class="room-code" id="f-code-text"></div>' +
@@ -163,8 +164,9 @@
         '<textarea id="f-answer" class="friend-code" placeholder="粘贴对方的应答码"></textarea>' +
         '<button class="btn primary" id="f-complete">③ 完成连接</button>' +
         '<div id="f-mstatus" class="muted small"></div></div>',
-      actions: [{ label: '关闭', cls: 'ghost' }]
+      actions: [{ label: '关闭', cls: 'ghost', onClick: function () { g.Net.leave(); } }]
     });
+    friendModal = m;
     function status(txt) { var s = m.box.querySelector('#f-status'); if (s) s.textContent = txt; }
     function mstatus(txt) { var s = m.box.querySelector('#f-mstatus'); if (s) s.textContent = txt; }
     var tabs = m.box.querySelectorAll('.friend-tab');
@@ -182,7 +184,7 @@
     m.box.querySelector('#f-create').addEventListener('click', function () {
       g.Net.createRoom(function (err, id) {
         if (err) { status('创建失败：' + err.message); return; }
-        fstate.creator = true;
+        friendState.creator = true;
         m.box.querySelector('#f-room-info').classList.remove('hidden');
         m.box.querySelector('#f-code-text').textContent = id;
         m.box.querySelector('#f-create').disabled = true;
@@ -194,8 +196,8 @@
     });
     m.box.querySelector('#f-join').addEventListener('click', function () {
       var id = m.box.querySelector('#f-roomid').value.trim();
-      if (!id) { status('请输入房间号'); return; }
-      fstate.creator = false;
+      if (!/^\d{6}$/.test(id)) { status('请输入 6 位数字房间号'); return; }
+      friendState.creator = false;
       status('正在连接房间 ' + id + ' ……');
       g.Net.joinRoom(id, function (err) {
         if (err) { status('加入失败：' + err.message); return; }
@@ -204,7 +206,7 @@
     });
     /* 手动信令 */
     m.box.querySelector('#f-gen').addEventListener('click', function () {
-      fstate.creator = true;
+      friendState.creator = true;
       mstatus('正在生成信令码……');
       g.Net.createManualOffer(function (err, code) {
         if (err) { mstatus('生成失败：' + err.message); return; }
@@ -222,12 +224,44 @@
       });
     });
   }
-  /* 好友对局：对方点击开始 → 收到 start 消息后由 GamePage 开局 */
+  /* 好友对局：连接状态与消息处理 */
+  var friendModal = null;
+  function closeFriendModal() { if (friendModal) { try { friendModal.close(); } catch (e) {} friendModal = null; } }
+  g.Net.on('open', function () {
+    U.toast('好友已连接！');
+    if (friendState && friendState.creator) {
+      showPvpSetup();
+    } else {
+      var st = document.querySelector('#f-status');
+      if (st) st.textContent = '已连接！等待房主设置对局……';
+      var st2 = document.querySelector('#f-mstatus');
+      if (st2) st2.textContent = '已连接！等待房主设置对局……';
+    }
+  });
+  function showPvpSetup() {
+    g.App.modal({
+      title: '对局设置',
+      body:
+        '<div class="option-row"><label>棋盘大小</label>' +
+        '<select id="pv-size"><option value="9" selected>9 路</option><option value="13">13 路</option><option value="19">19 路</option></select></div>' +
+        '<p class="muted small">你执黑先行，好友执白。<br>好友对弈落子无悔；双方停一手后自动点目。</p>',
+      actions: [
+        { label: '取消', cls: 'ghost', onClick: function () { g.Net.send({ t: 'cancel' }); g.Net.leave(); } },
+        { label: '开始', cls: 'primary', onClick: function () {
+            var size = parseInt(document.getElementById('pv-size').value, 10) || 9;
+            g.Net.send({ t: 'start', size: size, name: g.App.getSettings().playerName });
+            g.GamePage.startPvp({ size: size, creator: true });
+          } }
+      ]
+    });
+  }
   g.Net.on('data', function (msg) {
     if (!msg || typeof msg !== 'object') return;
     if (msg.t === 'start') {
+      closeFriendModal();
       g.GamePage.startPvp({ size: msg.size, creator: false, oppName: msg.name });
     } else if (msg.t === 'cancel') {
+      closeFriendModal();
       U.toast('对方取消了本次对局');
       g.Net.leave();
     }
