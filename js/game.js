@@ -778,7 +778,12 @@
       return;
     }
     if (msg.t === 'loseMsg') {
-      showChat('算你厉害！你是这个👍', false);
+      showChat('算你厉害！你是这个👍', false, 4200);
+      A.play('click');
+      return;
+    }
+    if (msg.t === 'boast') {
+      showChat('菜就多练！小样！', false, 4200);
       A.play('click');
       return;
     }
@@ -830,27 +835,33 @@
     pvpResult({ winner: sc.winner, black: sc.black, whiteTotal: sc.whiteTotal, komi: sc.komi, byResign: false });
   }
   function pvpResult(res) {
-    if (!state) return;
+    if (!state || state.over) return;   // 防重：双方同步消息时只结算一次
     var isDraw = res.winner === 0;
     var playerWin = !isDraw && res.winner === state.playerColor;
     state.over = true;
     S.clearCurrent();
-    // 输的一方自动给对方点赞（双方都能看到）
-    if (state.pvp && !isDraw && !playerWin) {
-      g.Net.send({ t: 'loseMsg' });
-      showChat('算你厉害！你是这个👍', true);
+    // 双向台词：输家点赞胜家，胜家调侃输家（气泡在结算框之上，双方可见）
+    if (state.pvp && !isDraw) {
+      if (!playerWin) {
+        g.Net.send({ t: 'loseMsg' });
+        showChat('算你厉害！你是这个👍', true, 4200);
+      } else {
+        g.Net.send({ t: 'boast' });
+        showChat('菜就多练！小样！', true, 4200);
+      }
     }
     if (playerWin && !isDraw && g.Fireworks) g.Fireworks.show(7000);
+    var sc = R.score(state.pos, R.autoDeadCandidates(state.pos));
     var banner = isDraw ? '握手言和' : (playerWin ? '恭喜获胜！' : '惜败');
     var m = g.App.modal({
       title: '对局结束',
       body:
         '<div class="result-banner ' + (playerWin ? 'win' : (isDraw ? '' : 'lose')) + '">' + banner + '</div>' +
-        (res.byResign
-          ? '<p class="muted small">' + (playerWin ? '对方中盘认输。' : '你中盘认输。') + '</p>'
-          : '<div class="score-line"><span>黑方（棋 + 空）</span><b>' + res.black + ' 子</b></div>' +
-            '<div class="score-line"><span>白方（棋 + 空 + 贴目 ' + res.komi + '）</span><b>' + res.whiteTotal + ' 子</b></div>') +
-        '<p class="muted small">输的一方会给你点👍，点「再来一局」继续 PK！</p>',
+        '<div class="score-line"><span>黑方（棋 + 空）</span><b>' + sc.black + ' 子</b></div>' +
+        '<div class="score-line"><span>白方（棋 + 空 + 贴目 ' + sc.komi + '）</span><b>' + sc.whiteTotal + ' 子</b></div>' +
+        '<p class="muted small">' +
+        (res.byResign ? (playerWin ? '对方中盘认输。' : '你中盘认输。') : '') +
+        '点「再来一局」继续 PK！</p>',
       actions: [
         { label: '再来一局', cls: 'primary', onClick: rematchRequest },
         { label: '返回主菜单', cls: 'ghost', onClick: function () { g.Net.leave(); g.App.showView('view-menu'); } }
@@ -914,15 +925,16 @@
       }, 900 + Math.random() * 1200);
     }
   }
-  function showChat(s, mine) {
+  function showChat(s, mine, durationMs) {
     var b = document.createElement('div');
     b.className = 'chat-bubble' + (mine ? ' me' : '');
     b.textContent = s;
     document.body.appendChild(b);
+    var d = durationMs || 2200;
     setTimeout(function () {
       b.classList.add('out');
       setTimeout(function () { if (b.parentNode) b.parentNode.removeChild(b); }, 450);
-    }, 2200);
+    }, d);
   }
   g.GamePage = {
     init: init, newGameFlow: newGameFlow, resume: resume, startPvp: startPvp, isPvp: isPvp,

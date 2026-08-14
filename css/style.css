@@ -488,7 +488,7 @@ select:focus, input[type="text"]:focus { border-color: var(--accent); box-shadow
   position: fixed; top: 120px; left: 50%; transform: translateX(-50%);
   background: var(--panel); border: 1px solid var(--accent); border-radius: 14px;
   padding: 8px 18px; font-size: 14px; box-shadow: 0 10px 26px var(--shadow);
-  z-index: 90; animation: chatPop .4s ease; pointer-events: none; max-width: 70vw;
+  z-index: 210; animation: chatPop .4s ease; pointer-events: none; max-width: 70vw; font-size: 16px;
 }
 .chat-bubble.me { background: var(--accent); color: var(--accent-ink); }
 .chat-bubble.out { opacity: 0; transform: translateX(-50%) translateY(-8px); transition: all .4s; }

@@ -9,7 +9,7 @@
     if (!canvas) {
       canvas = document.createElement('canvas');
       canvas.id = 'fw-canvas';
-      canvas.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:95;';
+      canvas.style.cssText = 'position:fixed;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:200;';
       document.body.appendChild(canvas);
     }
     var ctx = canvas.getContext('2d');
