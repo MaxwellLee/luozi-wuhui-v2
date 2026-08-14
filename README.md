@@ -2,7 +2,9 @@
 
 一款**新手友好**的围棋学习对弈游戏：不会下棋也没关系，柯洁老师会手把手教你规则、在实战中给你支招。
 
-> 🕹 **在线试玩（GitHub Pages）**：https://maxwelllee.github.io/luozi-wuhui/
+> 🕹 **在线试玩（GitHub Pages）**：https://maxwelllee.github.io/luozi-wuhui-v2/
+
+**V2 新增**：好友对弈（房间号/手动信令双模式）· 巅峰 AI 档（提速 2.3 倍）· 分享二维码 · 访问计数 · 对局快捷表情
 
 ## 🚀 快速开始
 
