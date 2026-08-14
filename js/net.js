@@ -12,7 +12,11 @@
 
   function on(ev, fn) { (callbacks[ev] = callbacks[ev] || []).push(fn); }
   function emit(ev, arg) {
-    (callbacks[ev] || []).forEach(function (f) { try { f(arg); } catch (e) {} });
+    (callbacks[ev] || []).forEach(function (f) {
+      try { f(arg); } catch (e) {
+        if (g.console && g.console.error) g.console.error('Net 回调错误(' + ev + '):', e);
+      }
+    });
   }
   function parse(d) {
     if (typeof d !== 'string') return d;

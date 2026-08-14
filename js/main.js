@@ -202,6 +202,7 @@
       g.Net.joinRoom(id, function (err) {
         if (err) { status('加入失败：' + err.message); return; }
         status('连接成功，等待对局设置……');
+        g.Net.send({ t: 'joined' }); // 主动通知房主：我已连上，请发对局设置
       });
     });
     /* 手动信令 */
@@ -226,11 +227,19 @@
   }
   /* 好友对局：连接状态与消息处理 */
   var friendModal = null;
+  var friendSetupShown = false;
   function closeFriendModal() { if (friendModal) { try { friendModal.close(); } catch (e) {} friendModal = null; } }
+  function tryShowPvpSetup() {
+    // 房主收到「open」或「joined」消息时弹对局设置（只弹一次）
+    if (friendSetupShown) return;
+    if (!friendState || !friendState.creator) return;
+    friendSetupShown = true;
+    showPvpSetup();
+  }
   g.Net.on('open', function () {
     U.toast('好友已连接！');
     if (friendState && friendState.creator) {
-      showPvpSetup();
+      tryShowPvpSetup();
     } else {
       var st = document.querySelector('#f-status');
       if (st) st.textContent = '已连接！等待房主设置对局……';
@@ -257,6 +266,10 @@
   }
   g.Net.on('data', function (msg) {
     if (!msg || typeof msg !== 'object') return;
+    if (msg.t === 'joined') {
+      tryShowPvpSetup();
+      return;
+    }
     if (msg.t === 'start') {
       closeFriendModal();
       g.GamePage.startPvp({ size: msg.size, creator: false, oppName: msg.name });
