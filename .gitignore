@@ -1,0 +1,4 @@
+# 开发辅助脚本不入库
+tools/
+Play.bat
+*.log

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>落子无悔 · 与柯洁老师学围棋</title>
+<link rel="stylesheet" href="css/style.css?v=4">
+</head>
+<body data-skin="warm">
+<div id="app">
+
+  <!-- ============ 主菜单 ============ -->
+  <section id="view-menu" class="view">
+    <header class="menu-hero">
+      <div class="hero-avatar" id="menu-avatar-player"></div>
+      <div class="hero-title">
+        <h1 class="game-title">落子无悔</h1>
+        <p class="game-subtitle">与柯洁老师学围棋 · 新手友好对弈课堂</p>
+      </div>
+      <div class="hero-avatar" id="menu-avatar-ai"></div>
+    </header>
+    <nav class="menu-buttons">
+      <button id="btn-new-game" class="menu-btn primary">开 始 对 局</button>
+      <button id="btn-friend" class="menu-btn">好 友 对 弈</button>
+      <button id="btn-continue" class="menu-btn hidden">继 续 对 局</button>
+      <button id="btn-classroom" class="menu-btn">围 棋 课 堂</button>
+      <button id="btn-library" class="menu-btn">棋 谱 库</button>
+      <button id="btn-story" class="menu-btn">围 棋 故 事</button>
+      <button id="btn-settings" class="menu-btn">设 置</button>
+      <button id="btn-share" class="menu-btn">分 享</button>
+    </nav>
+    <footer class="menu-footer">中国规则 · 黑贴 3¾ 子 · 落子有声 · 胜负无悔</footer>
+    <footer class="menu-footer small">
+      <span id="busuanzi_container_site_pv" style="display:none">本站访问 <span id="busuanzi_value_site_pv"></span> 次 · 访客 <span id="busuanzi_value_site_uv"></span> 人</span>
+    </footer>
+  </section>
+
+  <!-- ============ 对局页 ============ -->
+  <section id="view-game" class="view hidden">
+    <header class="game-header">
+      <div class="player-card" id="player-card">
+        <div class="avatar-wrap" id="game-avatar-player"></div>
+        <div class="player-info">
+          <div class="player-name" id="player-name">你</div>
+          <div class="player-meta" id="player-meta">黑 · 提子 0</div>
+        </div>
+        <div class="turn-dot" id="turn-player"></div>
+      </div>
+      <div class="game-tools">
+        <div class="tool-row" id="diff-row">
+          <label for="game-difficulty">AI 难度</label>
+          <select id="game-difficulty" class="tool-select">
+            <option value="beginner">启蒙</option>
+            <option value="easy" selected>入门</option>
+            <option value="medium">进阶</option>
+            <option value="hard">挑战</option>
+            <option value="master">巅峰</option>
+          </select>
+          <span class="mode-badge" id="mode-badge">正式对局</span>
+        </div>
+        <div class="tool-row toggles">
+          <label class="toggle-label"><input type="checkbox" id="toggle-hints" checked> 提示</label>
+          <label class="toggle-label"><input type="checkbox" id="toggle-comments" checked> 点评</label>
+          <label class="toggle-label"><input type="checkbox" id="toggle-sound" checked> 音效</label>
+        </div>
+        <div class="tool-row buttons">
+          <button class="tool-btn primary" id="btn-hint">请指教</button>
+          <button class="tool-btn" id="btn-score">点目</button>
+          <button class="tool-btn" id="btn-pass">停一手</button>
+          <button class="tool-btn" id="btn-undo">悔棋</button>
+          <button class="tool-btn" id="btn-resign">认输</button>
+          <button class="tool-btn" id="btn-leave-game">返回</button>
+        </div>
+      </div>
+      <div class="player-card right" id="ai-card">
+        <div class="avatar-wrap" id="game-avatar-ai"></div>
+        <div class="player-info">
+          <div class="player-name" id="opp-name">柯洁老师</div>
+          <div class="player-meta" id="ai-meta">白 · 提子 0</div>
+        </div>
+        <div class="turn-dot" id="turn-ai"></div>
+      </div>
+    </header>
+    <div class="game-body">
+      <div class="board-zone">
+        <div id="board-container"></div>
+        <div class="board-status" id="board-status">轮到你落子</div>
+        <div class="chat-bar" id="chat-bar">
+          <button class="qp-btn" data-chat="😀">😀</button>
+          <button class="qp-btn" data-chat="🤔">🤔</button>
+          <button class="qp-btn" data-chat="😅">😅</button>
+          <button class="qp-btn" data-chat="😤">😤</button>
+          <button class="qp-btn" data-chat="🎉">🎉</button>
+          <button class="qp-btn" data-chat="🙏">🙏</button>
+          <button class="qp-btn qp-text" data-chat="快点啊！">快点啊！</button>
+          <button class="qp-btn qp-text" data-chat="我等的花儿都谢了">花儿都谢了</button>
+          <button class="qp-btn qp-text" data-chat="好棋！">好棋！</button>
+          <button class="qp-btn qp-text" data-chat="手下留情">手下留情</button>
+          <button class="qp-btn qp-text" data-chat="再来一局">再来一局</button>
+        </div>
+      </div>
+      <aside class="game-side">
+        <div class="speech-bubble" id="speech-bubble">
+          <div class="speech-avatar" id="speech-avatar"></div>
+          <p id="speech-text">你好，我是柯洁老师。落子前可以点「请指教」听我讲解。</p>
+        </div>
+        <div class="game-log">
+          <div class="log-title">对局记录</div>
+          <div class="log-list" id="game-log-list"></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ 围棋课堂 ============ -->
+  <section id="view-classroom" class="view hidden">
+    <header class="view-header">
+      <button class="btn-back" data-back="view-menu">← 返回</button>
+      <h2>围棋课堂</h2>
+      <div class="progress-summary" id="lesson-progress"></div>
+    </header>
+    <div class="lesson-list" id="lesson-list"></div>
+    <div id="lesson-detail" class="hidden">
+      <div class="lesson-stepper" id="lesson-stepper"></div>
+      <div class="lesson-body">
+        <div class="lesson-text" id="lesson-text"></div>
+        <div class="lesson-board-wrap">
+          <div id="lesson-board"></div>
+          <div class="lesson-feedback" id="lesson-feedback"></div>
+        </div>
+      </div>
+      <div class="lesson-nav">
+        <button class="btn" id="lesson-prev">上一步</button>
+        <button class="btn primary" id="lesson-next">下一步</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 棋谱库 ============ -->
+  <section id="view-library" class="view hidden">
+    <header class="view-header">
+      <button class="btn-back" data-back="view-menu">← 返回</button>
+      <h2>棋谱库</h2>
+      <div class="tabs" id="lib-tabs">
+        <button class="tab active" data-lib="beginner">入门棋谱</button>
+        <button class="tab" data-lib="famous">名局片段</button>
+        <button class="tab" data-lib="mine">我的对局</button>
+      </div>
+    </header>
+    <div class="record-list" id="record-list"></div>
+    <div id="record-detail" class="hidden">
+      <div class="replay-wrap">
+        <div id="replay-board"></div>
+        <div class="replay-side">
+          <div class="record-meta" id="record-meta"></div>
+          <div class="record-comment" id="record-comment"></div>
+          <div class="replay-controls">
+            <button class="rp-btn" id="rp-first" title="回到开始">⏮</button>
+            <button class="rp-btn" id="rp-prev" title="上一步">◀</button>
+            <button class="rp-btn primary" id="rp-play" title="播放 / 暂停">▶</button>
+            <button class="rp-btn" id="rp-next" title="下一步">▶|</button>
+            <button class="rp-btn" id="rp-last" title="跳到结束">⏭</button>
+            <label class="rp-auto"><input type="checkbox" id="rp-auto" checked> 自动播放</label>
+          </div>
+          <input type="range" id="rp-slider" min="0" max="0" value="0">
+          <div class="rp-meta-line">
+            <button class="btn small" id="btn-export-sgf">导出 SGF</button>
+            <button class="btn small" id="btn-import-sgf">导入 SGF</button>
+          </div>
+          <div class="rp-meta-line" id="record-extra"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 围棋故事 ============ -->
+  <section id="view-story" class="view hidden">
+    <header class="view-header">
+      <button class="btn-back" data-back="view-menu">← 返回</button>
+      <h2>围棋故事</h2>
+      <div class="tabs" id="story-tabs">
+        <button class="tab active" data-story="timeline">历史时间线</button>
+        <button class="tab" data-story="figures">名人堂</button>
+        <button class="tab" data-story="culture">文化馆</button>
+      </div>
+    </header>
+    <div id="timeline" class="timeline-wrap"></div>
+    <div id="figure-grid" class="figure-grid hidden"></div>
+    <div id="culture-wrap" class="culture-wrap hidden"></div>
+  </section>
+
+  <!-- ============ 设置 ============ -->
+  <section id="view-settings" class="view hidden">
+    <header class="view-header">
+      <button class="btn-back" data-back="view-menu">← 返回</button>
+      <h2>设置</h2>
+    </header>
+    <div class="settings-grid">
+      <div class="setting-group">
+        <div class="setting-label">棋盘皮肤</div>
+        <div class="skin-cards" id="skin-cards">
+          <div class="skin-card active" data-skin="warm">
+            <div class="skin-preview" data-skin="warm"></div>
+            <div class="skin-name">和风木韵</div>
+            <div class="skin-desc">暖木樱花 · 温润</div>
+          </div>
+          <div class="skin-card" data-skin="orange">
+            <div class="skin-preview" data-skin="orange"></div>
+            <div class="skin-name">落日枫林</div>
+            <div class="skin-desc">夕阳枫叶 · 热烈</div>
+          </div>
+          <div class="skin-card" data-skin="dark">
+            <div class="skin-preview" data-skin="dark"></div>
+            <div class="skin-name">星夜墨竹</div>
+            <div class="skin-desc">墨色星空 · 沉静</div>
+          </div>
+        </div>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">对局默认</div>
+        <label class="setting-row">棋盘大小
+          <select id="set-size">
+            <option value="9" selected>9 路（新手推荐）</option>
+            <option value="13">13 路</option>
+            <option value="19">19 路</option>
+          </select>
+        </label>
+        <label class="setting-row">AI 难度
+          <select id="set-difficulty">
+            <option value="beginner">启蒙</option>
+            <option value="easy" selected>入门</option>
+            <option value="medium">进阶</option>
+            <option value="hard">挑战</option>
+            <option value="master">巅峰</option>
+          </select>
+        </label>
+        <label class="setting-row">我的昵称
+          <input type="text" id="set-name" maxlength="8" placeholder="棋友">
+        </label>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">声音</div>
+        <label class="setting-row"><input type="checkbox" id="set-sound" checked> 音效</label>
+        <label class="setting-row"><input type="checkbox" id="set-music" checked> 背景音乐</label>
+        <label class="setting-row">曲目
+          <select id="set-track">
+            <option value="bamboo">竹涧 · 竹笛风</option>
+            <option value="qin">松风琴语 · 古琴风</option>
+            <option value="star">星河入梦 · 空灵风</option>
+            <option value="rain">空山雨后 · 八音盒风</option>
+          </select>
+        </label>
+        <label class="setting-row">音量 <input type="range" id="set-volume" min="0" max="100" value="55"></label>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">教学助手</div>
+        <label class="setting-row"><input type="checkbox" id="set-hints" checked> 提示（请指教 + 危险提醒）</label>
+        <label class="setting-row"><input type="checkbox" id="set-comments" checked> 点评（柯洁老师逐手讲解）</label>
+      </div>
+      <div class="setting-group">
+        <div class="setting-label">数据</div>
+        <div class="setting-row">
+          <button class="btn small" id="btn-export-all">导出全部对局</button>
+          <button class="btn small danger" id="btn-reset-data">清除全部数据</button>
+        </div>
+        <div class="setting-row muted small" id="about-box">《落子无悔》V2.0 · 好友对弈 + 巅峰 AI · 数据保存在浏览器本地</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ============ 全局弹窗 ============ -->
+<div id="modal-root" class="hidden">
+  <div class="modal-backdrop"></div>
+  <div class="modal-box" id="modal-box"></div>
+</div>
+<input type="file" id="sgf-file" accept=".sgf,.txt" hidden>
+
+<script>
+/* 全局错误提示：任何脚本错误都会显示在屏幕上，方便反馈问题 */
+window.addEventListener('error', function (e) {
+  try {
+    var root = document.getElementById('toast-root');
+    if (!root) { root = document.createElement('div'); root.id = 'toast-root'; document.body.appendChild(root); }
+    var t = document.createElement('div');
+    t.className = 'toast toast-error';
+    t.textContent = '页面出错了：' + (e && e.message ? e.message : '未知错误') +
+      (e && e.filename ? ' （' + String(e.filename).split('/').pop() + ':' + (e.lineno || '?') + '）' : '');
+    root.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 8000);
+  } catch (x) {}
+});
+</script>
+<script src="js/vendor/peerjs.min.js?v=4"></script>
+<script src="js/vendor/qrcode.min.js?v=4"></script>
+<script src="js/util.js?v=4"></script>
+<script src="js/rules.js?v=4"></script>
+<script src="js/ai.js?v=4"></script>
+<script src="js/audio.js?v=4"></script>
+<script src="js/avatars.js?v=4"></script>
+<script src="js/skins.js?v=4"></script>
+<script src="js/board.js?v=4"></script>
+<script src="js/data/history.js?v=4"></script>
+<script src="js/data/records.js?v=4"></script>
+<script src="js/data/lessons.js?v=4"></script>
+<script src="js/storage.js?v=4"></script>
+<script src="js/net.js?v=4"></script>
+<script src="js/main.js?v=4"></script>
+<script src="js/game.js?v=4"></script>
+<script src="js/classroom.js?v=4"></script>
+<script src="js/library.js?v=4"></script>
+<script src="js/story.js?v=4"></script>
+<script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+</body>
+</html>
