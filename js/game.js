@@ -514,6 +514,17 @@
   }
   function onScore() {
     if (!state || state.over || state.scoring) return;
+    if (state.pvp) {
+      g.App.modal({
+        title: '现在点目？',
+        body: '<p>确定现在结束对局点目吗？将按当前局面计算胜负，并同步给对方。</p>',
+        actions: [
+          { label: '继续下', cls: 'ghost' },
+          { label: '点目结束', cls: 'primary', onClick: function () { pvpFinish(true); } }
+        ]
+      });
+      return;
+    }
     if (state.aiThinking) { U.toast('柯洁老师正在思考'); return; }
     if (state.pos.passes < 2) {
       g.App.modal({
@@ -576,9 +587,14 @@
         {
           label: '确定认输', cls: 'danger', onClick: function () {
             var winner = 3 - state.playerColor;
+            if (state.pvp) {
+              g.Net.send({ t: 'resign' });
+              saveRecord('pvp', winner, (winner === 1 ? '黑' : '白') + '中盘胜');
+              pvpResult({ winner: winner, byResign: true });
+              return;
+            }
             state.over = true;
             S.clearCurrent();
-            if (state.pvp) g.Net.send({ t: 'resign' });
             saveRecord('resign', winner, (winner === 1 ? '黑' : '白') + '中盘胜');
             showResult({ winner: winner, byScore: false });
           }
@@ -751,33 +767,117 @@
       return;
     }
     if (msg.t === 'resign') {
-      state.over = true;
+      if (!state) return;
+      var resWinner = state.playerColor;
+      saveRecord('pvp', resWinner, (resWinner === 1 ? '黑' : '白') + '中盘胜');
+      pvpResult({ winner: resWinner, byResign: true });
+      return;
+    }
+    if (msg.t === 'finish') {
+      if (state && state.pvp && !state.over) pvpFinish(false);
+      return;
+    }
+    if (msg.t === 'loseMsg') {
+      showChat('算你厉害！你是这个👍', false);
+      A.play('click');
+      return;
+    }
+    if (msg.t === 'rematchReq') {
+      if (!state || !state.over) return;
+      if (pvpRematchState === 1) {
+        // 双方同时点了再来一局 → 直接开战
+        pvpRematchState = 2;
+        if (pvpResultModal) { try { pvpResultModal.close(); } catch (e) {} pvpResultModal = null; }
+        startPvpRematch();
+        return;
+      }
+      if (pvpRematchState !== 0) return;
       g.App.modal({
-        title: '对局结束',
-        body: '<div class="result-banner win">对方认输，你赢了！</div>',
-        actions: [{ label: '返回主菜单', cls: 'primary', onClick: function () { g.App.showView('view-menu'); } }]
+        title: '再战邀请',
+        body: '<p>对方想和你再来一局，继续 PK？</p>',
+        actions: [
+          { label: '拒绝', cls: 'ghost', onClick: function () { g.Net.send({ t: 'rematchNo' }); g.Net.leave(); g.App.showView('view-menu'); } },
+          { label: '同意', cls: 'primary', onClick: function () { g.Net.send({ t: 'rematchYes' }); pvpRematchState = 2; startPvpRematch(); } }
+        ]
       });
-      A.play('win');
+      return;
+    }
+    if (msg.t === 'rematchYes') {
+      if (pvpRematchState === 2) return;
+      pvpRematchState = 2;
+      if (pvpResultModal) { try { pvpResultModal.close(); } catch (e) {} pvpResultModal = null; }
+      startPvpRematch();
+      return;
+    }
+    if (msg.t === 'rematchNo') {
+      if (pvpRematchState === 2) return;
+      if (pvpResultModal) { try { pvpResultModal.close(); } catch (e) {} pvpResultModal = null; }
+      U.toast('对方拒绝了再战');
       g.Net.leave();
+      g.App.showView('view-menu');
       return;
     }
     if (msg.t === 'chat') { showChat(msg.s, false); A.play('click'); return; }
   }
-  function pvpFinish() {
+  var pvpResultModal = null;
+  var pvpRematchState = 0; // 0=无 1=已发邀请待回应 2=已同意开局
+  function pvpFinish(sendFinish) {
+    if (!state || state.over) return;
     var sc = R.score(state.pos, R.autoDeadCandidates(state.pos));
-    state.over = true;
-    S.clearCurrent();
     var resText = sc.winner === 0 ? '和棋' : ((sc.winner === 1 ? '黑' : '白') + '胜 ' + Math.abs(sc.diff).toFixed(1) + ' 子');
     saveRecord('pvp', sc.winner, resText);
-    g.App.modal({
+    if (sendFinish) g.Net.send({ t: 'finish' });
+    pvpResult({ winner: sc.winner, black: sc.black, whiteTotal: sc.whiteTotal, komi: sc.komi, byResign: false });
+  }
+  function pvpResult(res) {
+    if (!state) return;
+    var isDraw = res.winner === 0;
+    var playerWin = !isDraw && res.winner === state.playerColor;
+    state.over = true;
+    S.clearCurrent();
+    // 输的一方自动给对方点赞（双方都能看到）
+    if (state.pvp && !isDraw && !playerWin) {
+      g.Net.send({ t: 'loseMsg' });
+      showChat('算你厉害！你是这个👍', true);
+    }
+    if (playerWin && !isDraw && g.Fireworks) g.Fireworks.show(7000);
+    var banner = isDraw ? '握手言和' : (playerWin ? '恭喜获胜！' : '惜败');
+    var m = g.App.modal({
       title: '对局结束',
-      body: '<div class="result-banner ' + (sc.winner === state.playerColor ? 'win' : 'lose') + '">' +
-        (sc.winner === 0 ? '握手言和' : (sc.winner === state.playerColor ? '恭喜获胜！' : '惜败')) + '</div>' +
-        '<div class="score-line"><span>黑方（棋 + 空）</span><b>' + sc.black + ' 子</b></div>' +
-        '<div class="score-line"><span>白方（棋 + 空 + 贴目 ' + sc.komi + '）</span><b>' + sc.whiteTotal + ' 子</b></div>',
-      actions: [{ label: '返回主菜单', cls: 'primary', onClick: function () { g.Net.leave(); g.App.showView('view-menu'); } }]
+      body:
+        '<div class="result-banner ' + (playerWin ? 'win' : (isDraw ? '' : 'lose')) + '">' + banner + '</div>' +
+        (res.byResign
+          ? '<p class="muted small">' + (playerWin ? '对方中盘认输。' : '你中盘认输。') + '</p>'
+          : '<div class="score-line"><span>黑方（棋 + 空）</span><b>' + res.black + ' 子</b></div>' +
+            '<div class="score-line"><span>白方（棋 + 空 + 贴目 ' + res.komi + '）</span><b>' + res.whiteTotal + ' 子</b></div>') +
+        '<p class="muted small">输的一方会给你点👍，点「再来一局」继续 PK！</p>',
+      actions: [
+        { label: '再来一局', cls: 'primary', onClick: rematchRequest },
+        { label: '返回主菜单', cls: 'ghost', onClick: function () { g.Net.leave(); g.App.showView('view-menu'); } }
+      ]
     });
-    A.play(sc.winner === state.playerColor ? 'win' : 'lose');
+    pvpResultModal = m;
+    A.play(playerWin ? 'win' : (isDraw ? 'pass' : 'lose'));
+  }
+  function rematchRequest() {
+    if (pvpRematchState !== 0) return;
+    pvpRematchState = 1;
+    g.Net.send({ t: 'rematchReq' });
+    if (pvpResultModal) {
+      pvpResultModal.box.innerHTML = '<div class="modal-title">等待回应</div><div class="modal-body"><p>已发出再战邀请，等待对方回应……</p></div>';
+    }
+  }
+  function startPvpRematch() {
+    var lastColor = state ? state.playerColor : 1;
+    var size = state ? state.size : 9;
+    var oppName = state ? (state.oppName || '好友') : '好友';
+    state = null;
+    start({ mode: 'pvp', size: size, komi: 7.5, handicap: 0, playerColor: 3 - lastColor, difficulty: 'easy', pvp: true });
+    state.oppName = oppName;
+    els.oppName.textContent = oppName;
+    els.badge.textContent = '好友对弈 · 再战';
+    pvpRematchState = 0;
+    g.Net.send({ t: 'hello', name: g.App.getSettings().playerName });
   }
   /* ================= V2：快捷表情 ================= */
   var AI_QUIPS = [
