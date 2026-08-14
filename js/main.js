@@ -113,7 +113,7 @@
     document.body.removeChild(ta);
   }
   function showShare() {
-    var url = location.href;
+    var url = window.location.href;
     var msg = '来下围棋吧！《落子无悔》——新手友好的围棋教学对弈游戏，柯洁老师在线教学，还能好友对战。\n' + url;
     var m = g.App.modal({
       title: '分享给朋友',
